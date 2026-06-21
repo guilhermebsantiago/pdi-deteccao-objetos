@@ -1,0 +1,22 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+*.log
+
+# Pesos e mídias gerados no Colab ou durante testes locais.
+backend/storage/models/**/*.pt
+backend/storage/models/**/*.pth
+backend/storage/models/**/*.onnx
+backend/storage/models/**/*.pb
+backend/storage/uploads/
+backend/storage/outputs/
+!backend/storage/models/.gitkeep
+!backend/storage/models/yolo/.gitkeep
+!backend/storage/models/ssdlite/.gitkeep
