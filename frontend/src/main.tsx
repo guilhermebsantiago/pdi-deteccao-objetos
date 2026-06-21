@@ -94,14 +94,14 @@ function App() {
   }
 
   return (
-    <main className="shell">
-      <section className="topbar">
+    <main className="shell" aria-busy={loading}>
+      <section className="topbar" aria-labelledby="page-title">
         <div>
           <span className="eyebrow">Projeto PDI</span>
-          <h1>Laboratório de Detecção de Objetos</h1>
+          <h1 id="page-title">Laboratório de Detecção de Objetos</h1>
         </div>
-        <div className="statusPill">
-          <Server size={18} />
+        <div className="statusPill" aria-label="Backend configurado com FastAPI">
+          <Server size={18} aria-hidden="true" />
           API FastAPI
         </div>
       </section>
@@ -110,9 +110,9 @@ function App() {
         <aside className="panel controls">
           <h2>Configuração</h2>
 
-          <label className="field">
+          <label className="field" htmlFor="model-select">
             <span>Modelo</span>
-            <select value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
+            <select id="model-select" value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
               {models.map((model) => (
                 <option key={model.id} value={model.id}>
                   {model.name}
@@ -122,29 +122,44 @@ function App() {
           </label>
 
           {activeModel && (
-            <div className={`modelState ${activeModel.available ? "ready" : "demo"}`}>
+            <div className={`modelState ${activeModel.available ? "ready" : "demo"}`} role="status">
               <strong>{activeModel.family}</strong>
               <span>{activeModel.status}</span>
             </div>
           )}
 
-          <div className="segmented">
-            <button className={mode === "imagem" ? "active" : ""} onClick={() => setMode("imagem")}>
-              <FileImage size={18} />
+          <div className="segmented" role="group" aria-label="Tipo de teste">
+            <button
+              type="button"
+              className={mode === "imagem" ? "active" : ""}
+              aria-pressed={mode === "imagem"}
+              onClick={() => setMode("imagem")}
+            >
+              <FileImage size={18} aria-hidden="true" />
               Imagem
             </button>
-            <button className={mode === "video" ? "active" : ""} onClick={() => setMode("video")}>
-              <Film size={18} />
+            <button
+              type="button"
+              className={mode === "video" ? "active" : ""}
+              aria-pressed={mode === "video"}
+              onClick={() => setMode("video")}
+            >
+              <Film size={18} aria-hidden="true" />
               Vídeo
             </button>
-            <button className={mode === "webcam" ? "active" : ""} onClick={() => setMode("webcam")}>
-              <Camera size={18} />
+            <button
+              type="button"
+              className={mode === "webcam" ? "active" : ""}
+              aria-pressed={mode === "webcam"}
+              onClick={() => setMode("webcam")}
+            >
+              <Camera size={18} aria-hidden="true" />
               Webcam
             </button>
           </div>
 
           <Slider
-            icon={<Gauge size={18} />}
+            icon={<Gauge size={18} aria-hidden="true" />}
             label="Confiança"
             value={confidence}
             min={0.05}
@@ -153,7 +168,7 @@ function App() {
             onChange={setConfidence}
           />
           <Slider
-            icon={<SlidersHorizontal size={18} />}
+            icon={<SlidersHorizontal size={18} aria-hidden="true" />}
             label="IoU"
             value={iou}
             min={0.1}
@@ -170,7 +185,11 @@ function App() {
             {mode === "webcam" && <WebcamTester loading={loading} onFrame={runFrame} />}
           </div>
 
-          {message && <div className="alert">{message}</div>}
+          {message && (
+            <div className="alert" role="alert">
+              {message}
+            </div>
+          )}
 
           <ResultPanel imageResult={imageResult} videoResult={videoResult} loading={loading} />
         </section>
@@ -196,6 +215,7 @@ function Slider(props: {
         <strong>{props.value.toFixed(2)}</strong>
       </span>
       <input
+        aria-label={props.label}
         type="range"
         min={props.min}
         max={props.max}
@@ -242,24 +262,31 @@ function Uploader(props: {
   onSubmit: (file: File) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
+  const inputId = `upload-${props.accept.replace(/[^a-z]/gi, "")}`;
 
   return (
     <div className="uploader">
       <div className="panelTitle">
-        {props.icon}
+        <span aria-hidden="true">{props.icon}</span>
         <h2>{props.title}</h2>
       </div>
-      <label className="dropzone">
-        <Upload size={30} />
+      <label className="dropzone" htmlFor={inputId}>
+        <Upload size={30} aria-hidden="true" />
         <span>{file ? file.name : "Selecionar arquivo"}</span>
         <input
+          id={inputId}
           type="file"
           accept={props.accept}
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
       </label>
-      <button className="primary" disabled={!file || props.loading} onClick={() => file && props.onSubmit(file)}>
-        <Play size={18} />
+      <button
+        type="button"
+        className="primary"
+        disabled={!file || props.loading}
+        onClick={() => file && props.onSubmit(file)}
+      >
+        {props.loading ? <span className="spinner" aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
         {props.loading ? "Processando" : props.action}
       </button>
     </div>
@@ -300,24 +327,24 @@ function WebcamTester({ loading, onFrame }: { loading: boolean; onFrame: (blob: 
   return (
     <div className="webcam">
       <div className="panelTitle">
-        <Camera size={22} />
+        <Camera size={22} aria-hidden="true" />
         <h2>Teste com webcam</h2>
       </div>
-      <video ref={videoRef} className="cameraPreview" autoPlay muted playsInline />
+      <video ref={videoRef} className="cameraPreview" autoPlay muted playsInline aria-label="Prévia da webcam" />
       <div className="buttonRow">
         {!active ? (
-          <button className="secondary" onClick={start}>
-            <Camera size={18} />
+          <button type="button" className="secondary" onClick={start}>
+            <Camera size={18} aria-hidden="true" />
             Ativar
           </button>
         ) : (
-          <button className="secondary" onClick={stop}>
-            <Square size={18} />
+          <button type="button" className="secondary" onClick={stop}>
+            <Square size={18} aria-hidden="true" />
             Parar
           </button>
         )}
-        <button className="primary" disabled={!active || loading} onClick={capture}>
-          <RefreshCcw size={18} />
+        <button type="button" className="primary" disabled={!active || loading} onClick={capture}>
+          {loading ? <span className="spinner" aria-hidden="true" /> : <RefreshCcw size={18} aria-hidden="true" />}
           {loading ? "Processando" : "Capturar frame"}
         </button>
       </div>
@@ -339,11 +366,16 @@ function ResultPanel({
   return (
     <section className="panel resultPanel">
       <div className="panelTitle">
-        <Gauge size={22} />
+        <Gauge size={22} aria-hidden="true" />
         <h2>Resultado</h2>
       </div>
 
-      {loading && <div className="empty">Processando arquivo...</div>}
+      {loading && (
+        <div className="empty" role="status">
+          <span className="spinner large" aria-hidden="true" />
+          Processando arquivo...
+        </div>
+      )}
 
       {!loading && imageResult && (
         <div className="resultGrid">
@@ -354,7 +386,7 @@ function ResultPanel({
 
       {!loading && videoResult && (
         <div className="videoResult">
-          <video className="preview" src={videoResult.annotated_video} controls />
+          <video className="preview" src={videoResult.annotated_video} controls aria-label="Vídeo anotado" />
           <div className="metrics">
             <span>{videoResult.frames_processed} frames</span>
             <span>{videoResult.detections_total} detecções</span>

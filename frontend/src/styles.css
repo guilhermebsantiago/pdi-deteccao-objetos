@@ -20,6 +20,20 @@ select {
 
 button {
   cursor: pointer;
+  touch-action: manipulation;
+}
+
+button,
+select,
+input,
+.dropzone {
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease,
+    opacity 180ms ease;
+}
+
+:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 3px;
 }
 
 .shell {
@@ -120,8 +134,14 @@ h2 {
 select {
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 12px;
+}
+
+select:hover,
+.dropzone:hover,
+.secondary:hover {
+  border-color: #94a3b8;
 }
 
 .modelState {
@@ -173,6 +193,10 @@ select {
   box-shadow: 0 2px 8px rgb(15 23 42 / 0.08);
 }
 
+.segmented button:hover {
+  color: #172033;
+}
+
 .slider {
   display: grid;
   gap: 10px;
@@ -187,6 +211,7 @@ select {
 
 .slider input {
   accent-color: #2563eb;
+  min-height: 44px;
   width: 100%;
 }
 
@@ -216,7 +241,10 @@ select {
 }
 
 .dropzone input {
-  display: none;
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+  width: 1px;
 }
 
 .primary,
@@ -226,7 +254,7 @@ select {
   display: inline-flex;
   gap: 8px;
   justify-content: center;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 16px;
 }
 
@@ -242,9 +270,36 @@ select {
   color: #172033;
 }
 
+.primary:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled),
+.segmented button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.spinner {
+  animation: spin 850ms linear infinite;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  display: inline-block;
+  height: 18px;
+  width: 18px;
+}
+
+.spinner.large {
+  height: 26px;
+  margin-right: 10px;
+  width: 26px;
 }
 
 .cameraPreview {
@@ -347,5 +402,22 @@ th {
 
   h1 {
     font-size: 1.75rem;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
   }
 }
