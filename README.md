@@ -25,6 +25,20 @@ backend/storage/models/ssdlite/model.pth
 
 Os pesos não são versionados porque podem ser grandes. O backend indica no endpoint `/api/models` se cada arquivo foi encontrado.
 
+Também é possível sincronizar os pesos diretamente de links públicos do Google Drive. Configure no `backend/.env`:
+
+```env
+YOLO_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
+SSDLITE_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
+```
+
+Depois use o botão **Sincronizar do Drive** no frontend ou chame:
+
+```text
+POST /api/models/yolo/sync
+POST /api/models/ssdlite/sync
+```
+
 ## Rodar backend
 
 ```bash

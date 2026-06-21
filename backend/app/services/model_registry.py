@@ -2,8 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from app.config import Settings
-from app.schemas import ModelInfo
+from app.schemas import ModelInfo, ModelSyncResponse
 from app.services.detectors import DemoDetector, Detector, OnnxDetector, TorchVisionSSDLiteDetector, YoloDetector
+from app.services.model_downloader import download_model
 
 
 @dataclass(frozen=True)
@@ -12,6 +13,7 @@ class ModelDefinition:
     name: str
     family: str
     weights_path: Path
+    source_url: str
     labels: list[str]
     loader: str
     num_classes: int | None = None
@@ -26,6 +28,7 @@ class ModelRegistry:
                 name="YOLOv8n treinado no Colab",
                 family="YOLO",
                 weights_path=settings.resolve_path(settings.yolo_weights),
+                source_url=settings.yolo_source_url,
                 labels=self._split_labels(settings.yolo_labels),
                 loader="yolo",
             ),
@@ -34,6 +37,7 @@ class ModelRegistry:
                 name="SSDLite320 treinado no Colab",
                 family="SSDLite",
                 weights_path=settings.resolve_path(settings.ssdlite_weights),
+                source_url=settings.ssdlite_source_url,
                 labels=self._split_labels(settings.ssdlite_labels),
                 loader=settings.ssdlite_format,
                 num_classes=settings.ssdlite_num_classes,
@@ -53,6 +57,21 @@ class ModelRegistry:
             self._cache[model_id] = self._build_detector(definition)
 
         return self._cache[model_id]
+
+    def sync_model(self, model_id: str) -> ModelSyncResponse:
+        if model_id not in self.definitions:
+            raise KeyError(f"Modelo '{model_id}' não cadastrado.")
+
+        definition = self.definitions[model_id]
+        download_model(definition.source_url, definition.weights_path)
+        self._cache.pop(model_id, None)
+
+        return ModelSyncResponse(
+            id=definition.id,
+            weights_path=str(definition.weights_path),
+            downloaded=definition.weights_path.exists(),
+            status="Modelo sincronizado com sucesso.",
+        )
 
     def _build_detector(self, definition: ModelDefinition) -> Detector:
         if not definition.weights_path.exists():
@@ -94,6 +113,7 @@ class ModelRegistry:
             family=definition.family,
             weights_path=str(definition.weights_path),
             available=available,
+            source_configured=bool(definition.source_url.strip()),
             status=status,
         )
 

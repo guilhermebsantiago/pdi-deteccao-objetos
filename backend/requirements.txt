@@ -5,6 +5,7 @@ pydantic-settings==2.7.1
 opencv-python-headless==4.10.0.84
 numpy==2.2.1
 pillow==11.1.0
+gdown==5.2.0
 ultralytics==8.3.59
 torch==2.5.1
 torchvision==0.20.1

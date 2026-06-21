@@ -4,6 +4,7 @@ export type ModelInfo = {
   family: string;
   weights_path: string;
   available: boolean;
+  source_configured: boolean;
   status: string;
 };
 
@@ -31,6 +32,13 @@ export type VideoDetectionResponse = {
   content_type: string;
 };
 
+export type ModelSyncResponse = {
+  id: string;
+  weights_path: string;
+  downloaded: boolean;
+  status: string;
+};
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -44,6 +52,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export async function getModels(): Promise<ModelInfo[]> {
   return request<ModelInfo[]>("/api/models");
+}
+
+export async function syncModel(modelId: string): Promise<ModelSyncResponse> {
+  return request<ModelSyncResponse>(`/api/models/${modelId}/sync`, { method: "POST" });
 }
 
 export async function detectImage(

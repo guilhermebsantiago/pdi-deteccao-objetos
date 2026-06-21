@@ -7,6 +7,7 @@ Interface em React/Vite para testar os modelos do trabalho.
 - Imagem
 - Vídeo
 - Webcam
+- Sincronização dos pesos via Google Drive
 
 ## Rodar
 

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Camera,
+  CloudDownload,
   FileImage,
   Film,
   Gauge,
@@ -20,6 +21,7 @@ import {
   getModels,
   ImageDetectionResponse,
   ModelInfo,
+  syncModel,
   VideoDetectionResponse
 } from "./api";
 import "./styles.css";
@@ -35,16 +37,25 @@ function App() {
   const [imageResult, setImageResult] = useState<ImageDetectionResponse | null>(null);
   const [videoResult, setVideoResult] = useState<VideoDetectionResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    getModels()
-      .then((items) => {
-        setModels(items);
-        if (items[0]) setSelectedModel(items[0].id);
-      })
-      .catch((error: Error) => setMessage(error.message));
+    loadModels();
   }, []);
+
+  async function loadModels() {
+    try {
+      const items = await getModels();
+      setModels(items);
+      setSelectedModel((current) => {
+        if (items.some((item) => item.id === current)) return current;
+        return items[0]?.id ?? current;
+      });
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao carregar modelos.");
+    }
+  }
 
   const activeModel = useMemo(
     () => models.find((model) => model.id === selectedModel),
@@ -93,6 +104,20 @@ function App() {
     }
   }
 
+  async function syncSelectedModel() {
+    setSyncLoading(true);
+    setMessage("");
+    try {
+      const response = await syncModel(selectedModel);
+      setMessage(response.status);
+      await loadModels();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha ao sincronizar modelo.");
+    } finally {
+      setSyncLoading(false);
+    }
+  }
+
   return (
     <main className="shell" aria-busy={loading}>
       <section className="topbar" aria-labelledby="page-title">
@@ -127,6 +152,20 @@ function App() {
               <span>{activeModel.status}</span>
             </div>
           )}
+
+          <button
+            type="button"
+            className="secondary syncButton"
+            disabled={!activeModel?.source_configured || syncLoading || loading}
+            onClick={syncSelectedModel}
+          >
+            {syncLoading ? (
+              <span className="spinner" aria-hidden="true" />
+            ) : (
+              <CloudDownload size={18} aria-hidden="true" />
+            )}
+            {syncLoading ? "Sincronizando" : "Sincronizar do Drive"}
+          </button>
 
           <div className="segmented" role="group" aria-label="Tipo de teste">
             <button

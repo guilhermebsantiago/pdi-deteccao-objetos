@@ -270,6 +270,10 @@ select:hover,
   color: #172033;
 }
 
+.syncButton {
+  width: 100%;
+}
+
 .primary:hover:not(:disabled) {
   background: #1d4ed8;
   border-color: #1d4ed8;

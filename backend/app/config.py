@@ -10,9 +10,11 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
 
     yolo_weights: str = "storage/models/yolo/best.pt"
+    yolo_source_url: str = ""
     yolo_labels: str = "caneta,maca"
 
     ssdlite_weights: str = "storage/models/ssdlite/model.pth"
+    ssdlite_source_url: str = ""
     ssdlite_format: str = "ssdlite_torchvision"
     ssdlite_labels: str = "__background__,caneta,maca"
     ssdlite_num_classes: int = 3

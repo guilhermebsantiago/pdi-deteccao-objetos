@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.schemas import HealthResponse, ImageDetectionResponse, ModelInfo, VideoDetectionResponse
+from app.schemas import HealthResponse, ImageDetectionResponse, ModelInfo, ModelSyncResponse, VideoDetectionResponse
 from app.services.image_codec import file_to_data_url, image_to_data_url, read_image_upload
 from app.services.model_registry import ModelRegistry
 from app.services.video_processor import process_video_upload
@@ -28,6 +28,14 @@ def health() -> HealthResponse:
 @app.get("/api/models", response_model=list[ModelInfo])
 def list_models() -> list[ModelInfo]:
     return registry.list_models()
+
+
+@app.post("/api/models/{model_id}/sync", response_model=ModelSyncResponse)
+def sync_model(model_id: str) -> ModelSyncResponse:
+    try:
+        return registry.sync_model(model_id)
+    except (KeyError, ValueError, RuntimeError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.post("/api/detect/image", response_model=ImageDetectionResponse)

@@ -7,6 +7,14 @@ class ModelInfo(BaseModel):
     family: str
     weights_path: str
     available: bool
+    source_configured: bool
+    status: str
+
+
+class ModelSyncResponse(BaseModel):
+    id: str
+    weights_path: str
+    downloaded: bool
     status: str
 
 
