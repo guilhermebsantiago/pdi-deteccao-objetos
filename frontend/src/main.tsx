@@ -7,11 +7,13 @@ import {
   Film,
   Gauge,
   ImageUp,
+  Moon,
   Play,
   RefreshCcw,
   Server,
   SlidersHorizontal,
   Square,
+  Sun,
   Upload
 } from "lucide-react";
 import {
@@ -27,11 +29,13 @@ import {
 import "./styles.css";
 
 type Mode = "imagem" | "video" | "webcam";
+type Theme = "light" | "dark";
 
 function App() {
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedModel, setSelectedModel] = useState("yolo");
   const [mode, setMode] = useState<Mode>("imagem");
+  const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
   const [confidence, setConfidence] = useState(0.35);
   const [iou, setIou] = useState(0.45);
   const [imageResult, setImageResult] = useState<ImageDetectionResponse | null>(null);
@@ -43,6 +47,11 @@ function App() {
   useEffect(() => {
     loadModels();
   }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   async function loadModels() {
     try {
@@ -129,6 +138,15 @@ function App() {
           <Server size={18} aria-hidden="true" />
           API FastAPI
         </div>
+        <button
+          type="button"
+          className="themeToggle"
+          aria-label={theme === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}
+          onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+        >
+          {theme === "dark" ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
+          {theme === "dark" ? "Claro" : "Escuro"}
+        </button>
       </section>
 
       <section className="layout">
@@ -235,6 +253,12 @@ function App() {
       </section>
     </main>
   );
+}
+
+function getInitialTheme(): Theme {
+  const storedTheme = localStorage.getItem("theme");
+  if (storedTheme === "light" || storedTheme === "dark") return storedTheme;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 function Slider(props: {
