@@ -23,9 +23,27 @@ class ModelRegistry:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.definitions = {
+            "yolo-caneta": ModelDefinition(
+                id="yolo-caneta",
+                name="YOLOv8n Caneta treinado no Colab",
+                family="YOLO",
+                weights_path=settings.resolve_path(settings.yolo_caneta_weights),
+                source_url=settings.yolo_caneta_source_url,
+                labels=self._split_labels(settings.yolo_caneta_labels),
+                loader="yolo",
+            ),
+            "yolo-maca": ModelDefinition(
+                id="yolo-maca",
+                name="YOLOv8n Maçã treinado no Colab",
+                family="YOLO",
+                weights_path=settings.resolve_path(settings.yolo_maca_weights),
+                source_url=settings.yolo_maca_source_url,
+                labels=self._split_labels(settings.yolo_maca_labels),
+                loader="yolo",
+            ),
             "yolo": ModelDefinition(
                 id="yolo",
-                name="YOLOv8n treinado no Colab",
+                name="YOLOv8n geral treinado no Colab",
                 family="YOLO",
                 weights_path=settings.resolve_path(settings.yolo_weights),
                 source_url=settings.yolo_source_url,

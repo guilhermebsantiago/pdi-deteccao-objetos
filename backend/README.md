@@ -9,6 +9,10 @@ O backend lê os caminhos do `.env`:
 ```env
 YOLO_WEIGHTS=storage/models/yolo/best.pt
 YOLO_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
+YOLO_CANETA_WEIGHTS=storage/models/yolo/caneta.pt
+YOLO_CANETA_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
+YOLO_MACA_WEIGHTS=storage/models/yolo/maca.pt
+YOLO_MACA_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
 SSDLITE_WEIGHTS=storage/models/ssdlite/model.pth
 SSDLITE_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
 ```

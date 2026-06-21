@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     yolo_source_url: str = ""
     yolo_labels: str = "caneta,maca"
 
+    yolo_caneta_weights: str = "storage/models/yolo/caneta.pt"
+    yolo_caneta_source_url: str = ""
+    yolo_caneta_labels: str = "caneta"
+
+    yolo_maca_weights: str = "storage/models/yolo/maca.pt"
+    yolo_maca_source_url: str = ""
+    yolo_maca_labels: str = "maca"
+
     ssdlite_weights: str = "storage/models/ssdlite/model.pth"
     ssdlite_source_url: str = ""
     ssdlite_format: str = "ssdlite_torchvision"

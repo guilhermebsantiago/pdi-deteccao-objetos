@@ -20,6 +20,8 @@ Copie os arquivos gerados no Colab para:
 
 ```text
 backend/storage/models/yolo/best.pt
+backend/storage/models/yolo/caneta.pt
+backend/storage/models/yolo/maca.pt
 backend/storage/models/ssdlite/model.pth
 ```
 
@@ -29,6 +31,8 @@ Também é possível sincronizar os pesos diretamente de links públicos do Goog
 
 ```env
 YOLO_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
+YOLO_CANETA_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
+YOLO_MACA_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
 SSDLITE_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
 ```
 
@@ -36,6 +40,8 @@ Depois use o botão **Sincronizar do Drive** no frontend ou chame:
 
 ```text
 POST /api/models/yolo/sync
+POST /api/models/yolo-caneta/sync
+POST /api/models/yolo-maca/sync
 POST /api/models/ssdlite/sync
 ```
 
