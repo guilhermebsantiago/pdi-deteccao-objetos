@@ -31,9 +31,16 @@ import "./styles.css";
 type Mode = "imagem" | "video" | "webcam";
 type Theme = "light" | "dark";
 
+const COLAB_MODEL_LABELS: Record<string, string> = {
+  "yolo-caneta": "YOLOv8n Caneta",
+  "yolo-maca": "YOLOv8n Maçã",
+  "ssdlite-caneta": "SSDLite320 Caneta",
+  "ssdlite-maca": "SSDLite320 Maçã"
+};
+
 function App() {
   const [models, setModels] = useState<ModelInfo[]>([]);
-  const [selectedModel, setSelectedModel] = useState("yolo");
+  const [selectedModel, setSelectedModel] = useState("");
   const [mode, setMode] = useState<Mode>("imagem");
   const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
   const [confidence, setConfidence] = useState(0.35);
@@ -58,17 +65,23 @@ function App() {
       const items = await getModels();
       setModels(items);
       setSelectedModel((current) => {
-        if (items.some((item) => item.id === current)) return current;
-        return items[0]?.id ?? current;
+        const colabItems = items.filter((item) => item.id in COLAB_MODEL_LABELS);
+        if (colabItems.some((item) => item.id === current)) return current;
+        return colabItems[0]?.id ?? "";
       });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Falha ao carregar modelos.");
     }
   }
 
+  const colabModels = useMemo(
+    () => models.filter((model) => model.id in COLAB_MODEL_LABELS),
+    [models]
+  );
+
   const activeModel = useMemo(
-    () => models.find((model) => model.id === selectedModel),
-    [models, selectedModel]
+    () => colabModels.find((model) => model.id === selectedModel),
+    [colabModels, selectedModel]
   );
 
   async function runImage(file: File) {
@@ -76,6 +89,7 @@ function App() {
     setMessage("");
     setVideoResult(null);
     try {
+      if (!activeModel) throw new Error("Nenhum modelo do Colab selecionado.");
       const result = await detectImage("/api/detect/image", file, file.name, selectedModel, confidence, iou);
       setImageResult(result);
     } catch (error) {
@@ -90,6 +104,7 @@ function App() {
     setMessage("");
     setImageResult(null);
     try {
+      if (!activeModel) throw new Error("Nenhum modelo do Colab selecionado.");
       const result = await detectVideo(file, selectedModel, confidence, iou);
       setVideoResult(result);
     } catch (error) {
@@ -104,6 +119,7 @@ function App() {
     setMessage("");
     setVideoResult(null);
     try {
+      if (!activeModel) throw new Error("Nenhum modelo do Colab selecionado.");
       const result = await detectImage("/api/detect/frame", blob, "webcam.jpg", selectedModel, confidence, iou);
       setImageResult(result);
     } catch (error) {
@@ -117,6 +133,7 @@ function App() {
     setSyncLoading(true);
     setMessage("");
     try {
+      if (!activeModel) throw new Error("Nenhum modelo do Colab selecionado.");
       const response = await syncModel(selectedModel);
       setMessage(response.status);
       await loadModels();
@@ -153,16 +170,27 @@ function App() {
         <aside className="panel controls">
           <h2>Configuração</h2>
 
-          <label className="field" htmlFor="model-select">
-            <span>Modelo</span>
-            <select id="model-select" value={selectedModel} onChange={(event) => setSelectedModel(event.target.value)}>
-              {models.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="field">
+            <span id="model-select-label">Modelo</span>
+            {colabModels.length ? (
+              <select
+                id="model-select"
+                aria-labelledby="model-select-label"
+                value={selectedModel}
+                onChange={(event) => setSelectedModel(event.target.value)}
+              >
+                {colabModels.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {COLAB_MODEL_LABELS[model.id]}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="modelEmpty" role="status">
+                Nenhum modelo final do Colab encontrado.
+              </div>
+            )}
+          </div>
 
           {activeModel && (
             <div className={`modelState ${activeModel.available ? "ready" : "demo"}`} role="status">
@@ -237,10 +265,11 @@ function App() {
 
         <section className="workspace">
           <div className="panel testPanel">
-            {mode === "imagem" && <ImageTester loading={loading} onSubmit={runImage} />}
-            {mode === "video" && <VideoTester loading={loading} onSubmit={runVideo} />}
+            {mode === "imagem" && <ImageTester disabled={!activeModel} loading={loading} onSubmit={runImage} />}
+            {mode === "video" && <VideoTester disabled={!activeModel} loading={loading} onSubmit={runVideo} />}
             {mode === "webcam" && (
               <WebcamTester
+                disabled={!activeModel}
                 loading={loading}
                 onFrame={runFrame}
                 modelId={selectedModel}
@@ -299,26 +328,44 @@ function Slider(props: {
   );
 }
 
-function ImageTester({ loading, onSubmit }: { loading: boolean; onSubmit: (file: File) => void }) {
+function ImageTester({
+  disabled,
+  loading,
+  onSubmit
+}: {
+  disabled: boolean;
+  loading: boolean;
+  onSubmit: (file: File) => void;
+}) {
   return (
     <Uploader
       accept="image/*"
       icon={<ImageUp size={22} />}
       title="Teste com imagem"
       action="Processar imagem"
+      disabled={disabled}
       loading={loading}
       onSubmit={onSubmit}
     />
   );
 }
 
-function VideoTester({ loading, onSubmit }: { loading: boolean; onSubmit: (file: File) => void }) {
+function VideoTester({
+  disabled,
+  loading,
+  onSubmit
+}: {
+  disabled: boolean;
+  loading: boolean;
+  onSubmit: (file: File) => void;
+}) {
   return (
     <Uploader
       accept="video/*"
       icon={<Film size={22} />}
       title="Teste com vídeo"
       action="Processar vídeo"
+      disabled={disabled}
       loading={loading}
       onSubmit={onSubmit}
     />
@@ -330,6 +377,7 @@ function Uploader(props: {
   icon: React.ReactNode;
   title: string;
   action: string;
+  disabled: boolean;
   loading: boolean;
   onSubmit: (file: File) => void;
 }) {
@@ -379,7 +427,7 @@ function Uploader(props: {
       <button
         type="button"
         className="primary"
-        disabled={!file || props.loading}
+        disabled={!file || props.disabled || props.loading}
         onClick={() => file && props.onSubmit(file)}
       >
         {props.loading ? <span className="spinner" aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
@@ -390,6 +438,7 @@ function Uploader(props: {
 }
 
 function WebcamTester({
+  disabled,
   loading,
   onFrame,
   modelId,
@@ -397,6 +446,7 @@ function WebcamTester({
   iou,
   onError
 }: {
+  disabled: boolean;
   loading: boolean;
   onFrame: (blob: Blob) => void;
   modelId: string;
@@ -486,7 +536,7 @@ function WebcamTester({
       </div>
       <div className="buttonRow">
         {!active ? (
-          <button type="button" className="secondary" onClick={start}>
+          <button type="button" className="secondary" disabled={disabled} onClick={start}>
             <Camera size={18} aria-hidden="true" />
             Ativar
           </button>
@@ -496,12 +546,12 @@ function WebcamTester({
             Parar
           </button>
         )}
-        <button type="button" className="primary" disabled={!active || loading} onClick={() => capture()}>
+        <button type="button" className="primary" disabled={!active || disabled || loading} onClick={() => capture()}>
           {loading ? <span className="spinner" aria-hidden="true" /> : <RefreshCcw size={18} aria-hidden="true" />}
           {loading ? "Processando" : "Capturar frame"}
         </button>
         {!live ? (
-          <button type="button" className="primary" disabled={!active} onClick={startLive}>
+          <button type="button" className="primary" disabled={!active || disabled} onClick={startLive}>
             <Play size={18} aria-hidden="true" />
             Ao vivo 1 FPS
           </button>

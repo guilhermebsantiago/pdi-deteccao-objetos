@@ -237,6 +237,17 @@ select:hover,
   font-size: 0.86rem;
 }
 
+.modelEmpty {
+  background: var(--empty-bg);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  min-height: 44px;
+  padding: 11px 12px;
+}
+
 .segmented {
   background: var(--segmented-bg);
   border-radius: 8px;

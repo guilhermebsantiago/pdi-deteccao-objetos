@@ -10,7 +10,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 class Settings(BaseSettings):
     app_name: str = "Detector de Objetos PDI"
     app_env: str = "development"
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     yolo_weights: str = "storage/models/yolo/best.pt"
     yolo_source_url: str = ""
