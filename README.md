@@ -1,8 +1,8 @@
 # Detector de Objetos - PDI
 
-Monorepo com frontend e backend para testar os modelos treinados no Google Colab.
+Monorepo com frontend React e backend FastAPI para testar os modelos treinados nos Colabs do trabalho de PDI.
 
-O projeto não treina os modelos. Ele consome os pesos exportados dos notebooks:
+O projeto nao treina os modelos. Ele consome os pesos finais exportados pelos notebooks:
 
 - YOLOv8n
 - SSDLite320 MobileNetV3
@@ -10,76 +10,116 @@ O projeto não treina os modelos. Ele consome os pesos exportados dos notebooks:
 ## Estrutura
 
 ```text
-backend/   API FastAPI para inferência
-frontend/  interface web para imagem, vídeo e webcam
+backend/   API FastAPI para inferencia e sincronizacao dos pesos
+frontend/  interface web para testar imagem, video e webcam
 ```
 
-## Pesos vindos do Colab
+## Requisitos
 
-Copie os arquivos gerados no Colab para:
+- Python 3.12 recomendado. O Python 3.13 pode falhar ao instalar `torch==2.5.1`.
+- Node.js 20 ou superior.
+- Acesso aos links publicos das pastas do Google Drive com os modelos.
 
-```text
-backend/storage/models/yolo/best.pt
-backend/storage/models/yolo/caneta.pt
-backend/storage/models/yolo/maca.pt
-backend/storage/models/ssdlite/model.pth
-```
+## Configurar backend
 
-Os pesos não são versionados porque podem ser grandes. O backend indica no endpoint `/api/models` se cada arquivo foi encontrado.
-
-Também é possível sincronizar os pesos diretamente de links públicos do Google Drive. Configure no `backend/.env`:
-
-```env
-YOLO_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
-YOLO_CANETA_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
-YOLO_MACA_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
-SSDLITE_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
-```
-
-Depois use o botão **Sincronizar do Drive** no frontend ou chame:
-
-```text
-POST /api/models/yolo/sync
-POST /api/models/yolo-caneta/sync
-POST /api/models/yolo-maca/sync
-POST /api/models/ssdlite/sync
-```
-
-## Rodar backend
-
-```bash
+```powershell
 cd backend
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
-uvicorn app.main:app --reload --port 8000
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-## Rodar frontend
+Edite `backend/.env` se precisar trocar os links das pastas. A configuracao padrao espera estes nomes dentro da pasta de modelos:
 
-```bash
+```text
+ssdlite_caneta_best.pth
+ssdlite_maca_best.pth
+yolo_caneta_best.pt
+yolo_maca_best.pt
+```
+
+Os caminhos locais padrao dos pesos sao:
+
+```text
+backend/storage/models/ssdlite/caneta.pth
+backend/storage/models/ssdlite/maca.pth
+backend/storage/models/yolo/caneta.pt
+backend/storage/models/yolo/maca.pt
+```
+
+Inicie a API:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+A API fica em `http://127.0.0.1:8000`.
+
+## Configurar frontend
+
+Em outro terminal:
+
+```powershell
 cd frontend
 npm install
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-Abra `http://localhost:5173`.
+Abra `http://127.0.0.1:5173`.
 
-## Fluxos de teste
+## Sincronizar modelos do Drive
 
-- Imagem: envia uma imagem para a API e mostra as detecções.
-- Vídeo: envia um vídeo, processa os frames no backend e exibe o vídeo anotado.
-- Webcam: captura frames no navegador e envia para a API usando o mesmo endpoint de inferência por imagem.
+No frontend, selecione o modelo e clique em **Sincronizar do Drive**.
 
-## Observação sobre os formatos
+Modelos esperados:
 
-O YOLO usa diretamente o arquivo `.pt` da Ultralytics.
+- `YOLOv8n Caneta treinado no Colab`
+- `YOLOv8n Maca treinado no Colab`
+- `SSDLite320 Caneta treinado no Colab`
+- `SSDLite320 Maca treinado no Colab`
 
-Para o SSDLite, o backend aceita:
+Tambem e possivel chamar a API diretamente:
 
-- checkpoint com modelo completo salvo por `torch.save(model, path)`;
-- checkpoint com `state_dict` compatível com `torchvision.models.detection.ssdlite320_mobilenet_v3_large`;
-- arquivo ONNX, se configurado no `.env`.
+```text
+POST /api/models/yolo-caneta/sync
+POST /api/models/yolo-maca/sync
+POST /api/models/ssdlite-caneta/sync
+POST /api/models/ssdlite-maca/sync
+```
 
-Se o formato exportado pelo Colab for diferente, o ponto de ajuste fica em `backend/app/services/detectors.py`.
+O endpoint baixa a pasta do Drive em uma area temporaria, encontra o arquivo esperado pelo nome e substitui o peso local. Se o modelo ja estava carregado em memoria, o cache dele e limpo apos o sync.
+
+## Rodar testes na interface
+
+A tela permite testar:
+
+- Imagem: envia uma imagem para a API e mostra as caixas detectadas.
+- Video: envia um video e recebe um video anotado.
+- Webcam: captura frame manualmente ou roda inferencia ao vivo em 1 FPS com overlay.
+
+Os controles de `Confianca` e `IoU` sao enviados para os endpoints de inferencia.
+
+## Endpoints principais
+
+```text
+GET  /api/health
+GET  /api/models
+POST /api/models/{model_id}/sync
+POST /api/detect/image
+POST /api/detect/frame
+POST /api/detect/video
+```
+
+Os endpoints de deteccao recebem `multipart/form-data` com:
+
+- `file`
+- `model_id`
+- `confidence`
+- `iou`
+
+## Observacoes
+
+- Os pesos nao sao versionados no Git.
+- Se os pesos ainda nao foram sincronizados, o backend usa modo demonstracao quando `DEMO_MODE=true`.
+- Os modelos SSDLite por base usam duas classes: `background + objeto`.
+- O modelo `ssdlite` geral e o `yolo` geral ficam cadastrados por compatibilidade, mas o fluxo principal usa os modelos separados por base.

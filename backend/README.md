@@ -1,44 +1,87 @@
 # Backend
 
-API em FastAPI para consumir os pesos exportados pelo Colab.
+API FastAPI para consumir os pesos exportados pelos Colabs.
+
+## Instalar
+
+Use Python 3.12.
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+## Rodar
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
 
 ## Contrato dos modelos
 
-O backend lê os caminhos do `.env`:
+O backend le `backend/.env` mesmo quando o processo e iniciado fora da pasta `backend`.
+
+Principais variaveis:
 
 ```env
-YOLO_WEIGHTS=storage/models/yolo/best.pt
-YOLO_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
 YOLO_CANETA_WEIGHTS=storage/models/yolo/caneta.pt
-YOLO_CANETA_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
+YOLO_CANETA_SOURCE_URL=https://drive.google.com/drive/folders/ID_DA_PASTA
+YOLO_CANETA_SOURCE_FILE=yolo_caneta_best.pt
+
 YOLO_MACA_WEIGHTS=storage/models/yolo/maca.pt
-YOLO_MACA_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
-SSDLITE_WEIGHTS=storage/models/ssdlite/model.pth
-SSDLITE_SOURCE_URL=https://drive.google.com/file/d/ID_DO_ARQUIVO/view?usp=sharing
+YOLO_MACA_SOURCE_URL=https://drive.google.com/drive/folders/ID_DA_PASTA
+YOLO_MACA_SOURCE_FILE=yolo_maca_best.pt
+
+SSDLITE_CANETA_WEIGHTS=storage/models/ssdlite/caneta.pth
+SSDLITE_CANETA_SOURCE_URL=https://drive.google.com/drive/folders/ID_DA_PASTA
+SSDLITE_CANETA_SOURCE_FILE=ssdlite_caneta_best.pth
+
+SSDLITE_MACA_WEIGHTS=storage/models/ssdlite/maca.pth
+SSDLITE_MACA_SOURCE_URL=https://drive.google.com/drive/folders/ID_DA_PASTA
+SSDLITE_MACA_SOURCE_FILE=ssdlite_maca_best.pth
 ```
 
-O YOLO usa o loader da Ultralytics.
+Se `SOURCE_URL` for uma pasta do Drive, o backend baixa a pasta para um diretorio temporario e procura o arquivo definido em `SOURCE_FILE`.
 
-O SSDLite usa PyTorch/TorchVision e aceita checkpoint com modelo completo ou `state_dict`.
+## Modelos cadastrados
+
+- `yolo-caneta`
+- `yolo-maca`
+- `yolo`
+- `ssdlite-caneta`
+- `ssdlite-maca`
+- `ssdlite`
+
+O fluxo principal usa os modelos separados por base. `yolo` e `ssdlite` ficam como compatibilidade.
 
 ## Endpoints
 
-- `GET /api/health`
-- `GET /api/models`
-- `POST /api/models/{model_id}/sync`
-- `POST /api/detect/image`
-- `POST /api/detect/frame`
-- `POST /api/detect/video`
+```text
+GET  /api/health
+GET  /api/models
+POST /api/models/{model_id}/sync
+POST /api/detect/image
+POST /api/detect/frame
+POST /api/detect/video
+```
 
-Os endpoints de detecção recebem `multipart/form-data` com:
+Os endpoints de deteccao recebem `multipart/form-data` com:
 
 - `file`
 - `model_id`
 - `confidence`
 - `iou`
 
-## Sincronizar pesos do Colab
+## Sincronizacao
 
-No Colab, salve o arquivo final no Google Drive e gere um link compartilhável público. A API baixa esse arquivo para o caminho configurado em `YOLO_WEIGHTS` ou `SSDLITE_WEIGHTS`.
+Exemplos:
 
-O backend usa os pesos locais após o download. Se um modelo já estava carregado em memória, o cache dele é limpo após a sincronização.
+```text
+POST /api/models/yolo-caneta/sync
+POST /api/models/yolo-maca/sync
+POST /api/models/ssdlite-caneta/sync
+POST /api/models/ssdlite-maca/sync
+```
+
+Apos baixar o peso, o cache do modelo em memoria e limpo para a proxima inferencia carregar o arquivo novo.

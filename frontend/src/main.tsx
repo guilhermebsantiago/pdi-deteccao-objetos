@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Camera,
@@ -239,7 +239,16 @@ function App() {
           <div className="panel testPanel">
             {mode === "imagem" && <ImageTester loading={loading} onSubmit={runImage} />}
             {mode === "video" && <VideoTester loading={loading} onSubmit={runVideo} />}
-            {mode === "webcam" && <WebcamTester loading={loading} onFrame={runFrame} />}
+            {mode === "webcam" && (
+              <WebcamTester
+                loading={loading}
+                onFrame={runFrame}
+                modelId={selectedModel}
+                confidence={confidence}
+                iou={iou}
+                onError={setMessage}
+              />
+            )}
           </div>
 
           {message && (
@@ -325,7 +334,12 @@ function Uploader(props: {
   onSubmit: (file: File) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
-  const inputId = `upload-${props.accept.replace(/[^a-z]/gi, "")}`;
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  function selectFile(nextFile: File | undefined) {
+    if (!nextFile) return;
+    setFile(nextFile);
+  }
 
   return (
     <div className="uploader">
@@ -333,16 +347,35 @@ function Uploader(props: {
         <span aria-hidden="true">{props.icon}</span>
         <h2>{props.title}</h2>
       </div>
-      <label className="dropzone" htmlFor={inputId}>
+      <div
+        className="dropzone"
+        role="button"
+        tabIndex={0}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          selectFile(event.dataTransfer.files[0]);
+        }}
+      >
         <Upload size={30} aria-hidden="true" />
-        <span>{file ? file.name : "Selecionar arquivo"}</span>
+        <span>{file ? file.name : "Arraste um arquivo ou selecione manualmente"}</span>
+        <button type="button" className="secondary fileButton">
+          Selecionar arquivo
+        </button>
         <input
-          id={inputId}
+          ref={inputRef}
           type="file"
           accept={props.accept}
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          onChange={(event) => selectFile(event.target.files?.[0])}
         />
-      </label>
+      </div>
       <button
         type="button"
         className="primary"
@@ -356,10 +389,29 @@ function Uploader(props: {
   );
 }
 
-function WebcamTester({ loading, onFrame }: { loading: boolean; onFrame: (blob: Blob) => void }) {
+function WebcamTester({
+  loading,
+  onFrame,
+  modelId,
+  confidence,
+  iou,
+  onError
+}: {
+  loading: boolean;
+  onFrame: (blob: Blob) => void;
+  modelId: string;
+  confidence: number;
+  iou: number;
+  onError: (message: string) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const liveIntervalRef = useRef<number | null>(null);
+  const processingRef = useRef(false);
   const [active, setActive] = useState(false);
+  const [live, setLive] = useState(false);
+  const [liveDetections, setLiveDetections] = useState<Detection[]>([]);
+  const [liveSize, setLiveSize] = useState({ width: 0, height: 0 });
 
   async function start() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -369,14 +421,17 @@ function WebcamTester({ loading, onFrame }: { loading: boolean; onFrame: (blob: 
   }
 
   function stop() {
+    stopLive();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setActive(false);
+    setLiveDetections([]);
   }
 
-  function capture() {
+  function capture(sendFrame = onFrame) {
     const video = videoRef.current;
     if (!video) return;
+    if (!video.videoWidth || !video.videoHeight) return;
 
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
@@ -384,7 +439,39 @@ function WebcamTester({ loading, onFrame }: { loading: boolean; onFrame: (blob: 
     const context = canvas.getContext("2d");
     if (!context) return;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob((blob) => blob && onFrame(blob), "image/jpeg", 0.92);
+    canvas.toBlob((blob) => blob && sendFrame(blob), "image/jpeg", 0.92);
+  }
+
+  function startLive() {
+    if (!active || liveIntervalRef.current !== null) return;
+    setLive(true);
+
+    const sendLiveFrame = async (blob: Blob) => {
+      if (processingRef.current) return;
+      processingRef.current = true;
+      try {
+        const result = await detectImage("/api/detect/frame", blob, "webcam.jpg", modelId, confidence, iou);
+        setLiveDetections(result.detections);
+        setLiveSize({ width: result.width, height: result.height });
+      } catch (error) {
+        onError(error instanceof Error ? error.message : "Falha ao processar webcam ao vivo.");
+        stopLive();
+      } finally {
+        processingRef.current = false;
+      }
+    };
+
+    capture(sendLiveFrame);
+    liveIntervalRef.current = window.setInterval(() => capture(sendLiveFrame), 1000);
+  }
+
+  function stopLive() {
+    if (liveIntervalRef.current !== null) {
+      window.clearInterval(liveIntervalRef.current);
+      liveIntervalRef.current = null;
+    }
+    processingRef.current = false;
+    setLive(false);
   }
 
   return (
@@ -393,7 +480,10 @@ function WebcamTester({ loading, onFrame }: { loading: boolean; onFrame: (blob: 
         <Camera size={22} aria-hidden="true" />
         <h2>Teste com webcam</h2>
       </div>
-      <video ref={videoRef} className="cameraPreview" autoPlay muted playsInline aria-label="Prévia da webcam" />
+      <div className="cameraStage">
+        <video ref={videoRef} className="cameraPreview" autoPlay muted playsInline aria-label="Prévia da webcam" />
+        {live && <LiveOverlay detections={liveDetections} size={liveSize} />}
+      </div>
       <div className="buttonRow">
         {!active ? (
           <button type="button" className="secondary" onClick={start}>
@@ -406,12 +496,49 @@ function WebcamTester({ loading, onFrame }: { loading: boolean; onFrame: (blob: 
             Parar
           </button>
         )}
-        <button type="button" className="primary" disabled={!active || loading} onClick={capture}>
+        <button type="button" className="primary" disabled={!active || loading} onClick={() => capture()}>
           {loading ? <span className="spinner" aria-hidden="true" /> : <RefreshCcw size={18} aria-hidden="true" />}
           {loading ? "Processando" : "Capturar frame"}
         </button>
+        {!live ? (
+          <button type="button" className="primary" disabled={!active} onClick={startLive}>
+            <Play size={18} aria-hidden="true" />
+            Ao vivo 1 FPS
+          </button>
+        ) : (
+          <button type="button" className="secondary" onClick={stopLive}>
+            <Square size={18} aria-hidden="true" />
+            Parar ao vivo
+          </button>
+        )}
       </div>
     </div>
+  );
+}
+
+function LiveOverlay({ detections, size }: { detections: Detection[]; size: { width: number; height: number } }) {
+  if (!size.width || !size.height) return null;
+
+  return (
+    <svg className="liveOverlay" viewBox={`0 0 ${size.width} ${size.height}`} preserveAspectRatio="none">
+      {detections.map((detection, index) => {
+        const [x1, y1, x2, y2] = detection.box;
+        const width = Math.max(x2 - x1, 0);
+        const height = Math.max(y2 - y1, 0);
+        const label = `${detection.label} ${(detection.confidence * 100).toFixed(0)}%`;
+        const labelWidth = Math.max(label.length * 9 + 10, 46);
+        const labelY = y1 > 22 ? y1 - 22 : y1 + 2;
+        const textY = labelY + 16;
+
+        return (
+          <g key={`${detection.label}-${index}`}>
+            <rect x={x1} y={y1} width={width} height={height} />
+            <rect className="labelBg" x={x1} y={labelY} width={labelWidth} height={20} />
+            <text x={x1 + 5} y={textY}>{label}</text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 

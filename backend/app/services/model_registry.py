@@ -14,6 +14,7 @@ class ModelDefinition:
     family: str
     weights_path: Path
     source_url: str
+    source_file: str
     labels: list[str]
     loader: str
     num_classes: int | None = None
@@ -29,6 +30,7 @@ class ModelRegistry:
                 family="YOLO",
                 weights_path=settings.resolve_path(settings.yolo_caneta_weights),
                 source_url=settings.yolo_caneta_source_url,
+                source_file=settings.yolo_caneta_source_file,
                 labels=self._split_labels(settings.yolo_caneta_labels),
                 loader="yolo",
             ),
@@ -38,6 +40,7 @@ class ModelRegistry:
                 family="YOLO",
                 weights_path=settings.resolve_path(settings.yolo_maca_weights),
                 source_url=settings.yolo_maca_source_url,
+                source_file=settings.yolo_maca_source_file,
                 labels=self._split_labels(settings.yolo_maca_labels),
                 loader="yolo",
             ),
@@ -47,8 +50,31 @@ class ModelRegistry:
                 family="YOLO",
                 weights_path=settings.resolve_path(settings.yolo_weights),
                 source_url=settings.yolo_source_url,
+                source_file=settings.yolo_source_file,
                 labels=self._split_labels(settings.yolo_labels),
                 loader="yolo",
+            ),
+            "ssdlite-caneta": ModelDefinition(
+                id="ssdlite-caneta",
+                name="SSDLite320 Caneta treinado no Colab",
+                family="SSDLite",
+                weights_path=settings.resolve_path(settings.ssdlite_caneta_weights),
+                source_url=settings.ssdlite_caneta_source_url,
+                source_file=settings.ssdlite_caneta_source_file,
+                labels=self._split_labels(settings.ssdlite_caneta_labels),
+                loader=settings.ssdlite_format,
+                num_classes=None,
+            ),
+            "ssdlite-maca": ModelDefinition(
+                id="ssdlite-maca",
+                name="SSDLite320 Maçã treinado no Colab",
+                family="SSDLite",
+                weights_path=settings.resolve_path(settings.ssdlite_maca_weights),
+                source_url=settings.ssdlite_maca_source_url,
+                source_file=settings.ssdlite_maca_source_file,
+                labels=self._split_labels(settings.ssdlite_maca_labels),
+                loader=settings.ssdlite_format,
+                num_classes=None,
             ),
             "ssdlite": ModelDefinition(
                 id="ssdlite",
@@ -56,6 +82,7 @@ class ModelRegistry:
                 family="SSDLite",
                 weights_path=settings.resolve_path(settings.ssdlite_weights),
                 source_url=settings.ssdlite_source_url,
+                source_file=settings.ssdlite_source_file,
                 labels=self._split_labels(settings.ssdlite_labels),
                 loader=settings.ssdlite_format,
                 num_classes=settings.ssdlite_num_classes,
@@ -81,7 +108,7 @@ class ModelRegistry:
             raise KeyError(f"Modelo '{model_id}' não cadastrado.")
 
         definition = self.definitions[model_id]
-        download_model(definition.source_url, definition.weights_path)
+        download_model(definition.source_url, definition.weights_path, definition.source_file)
         self._cache.pop(model_id, None)
 
         return ModelSyncResponse(
