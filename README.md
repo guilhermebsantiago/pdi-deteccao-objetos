@@ -123,3 +123,7 @@ Os endpoints de deteccao recebem `multipart/form-data` com:
 - Se os pesos ainda nao foram sincronizados, o backend usa modo demonstracao quando `DEMO_MODE=true`.
 - Os modelos SSDLite por base usam duas classes: `background + objeto`.
 - O modelo `ssdlite` geral e o `yolo` geral ficam cadastrados por compatibilidade, mas o fluxo principal usa os modelos separados por base.
+
+## Organização do projeto
+
+A divisão de tasks do projeto está disponível em: [pdi-deteccao-objetos](https://github.com/users/Jenniiu/projects/2/views/1)
